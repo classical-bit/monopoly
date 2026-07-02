@@ -27,13 +27,23 @@ interface GameState {
 
 export default function App() {
   const [gameState, setGameState] = useState<GameState | null> (null);
-  const [playerId] = useState(()=> "player_" + Math.random().toString(36).substring(2,9));
+  const [playerId] = useState(()=> {
+    const cachedId = localStorage.getItem('monopoly_game_player_id');
+    if (cachedId) return cachedId;
+
+    const newId = "p_" + Math.random().toString(36).substring(2,9);
+    localStorage.setItem('monopoly_game_player_id', newId);
+    return newId;
+  });
   const [playerName, setPlayerName] = useState("Guest");
   const [joined, setJoined] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const ws = useRef<WebSocket | null>(null);
   
   useEffect(() => {
+    if (localStorage.getItem('monopoly_game_player_id')) {
+      connectToRoom();
+    }
     return () => {
       if (ws.current) {
         ws.current.close()

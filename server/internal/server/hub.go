@@ -44,27 +44,25 @@ func (h *GameHub) HandleWS(w http.ResponseWriter, r *http.Request) {
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println("Upgrade Error:", err)
+		log.Printf("Failed to upgrade connection for player %s: %v", playerID, err)
 		return
 	}
-	defer conn.Close()
-
-	h.Clients[roomID] = append(h.Clients[roomID], conn)
 
 	h.mu.Lock()
+
 	if h.GameStates[roomID] == nil {
 		specs := map[string]string{playerID: playerName}
 		h.GameStates[roomID] = engine.NewGame(roomID, specs)
 	} else {
-		found := false
+		playerExist := false
 		for _, p := range h.GameStates[roomID].Players {
 			if p.ID == playerID {
-				found = true
+				playerExist = true
 				break
 			}
 		}
 
-		if !found {
+		if !playerExist {
 			h.GameStates[roomID].Players = append(h.GameStates[roomID].Players, &engine.Player{
 				ID:       playerID,
 				Name:     playerName,
@@ -73,7 +71,26 @@ func (h *GameHub) HandleWS(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 	}
+
+	h.Clients[roomID] = append(h.Clients[roomID], conn)
+
 	h.mu.Unlock()
+
+	defer func() {
+		conn.Close()
+		h.mu.Lock()
+
+		connections := h.Clients[roomID]
+		for i, c := range connections {
+			if c == conn {
+				h.Clients[roomID] = append(connections[:i], connections[i+1:]...)
+				break
+			}
+		}
+
+		log.Printf("Connection closed and purged for Player: %s in Room: %s", playerID, roomID)
+		h.mu.Unlock()
+	}()
 
 	// Initial State broadcast
 	initialState, err := json.Marshal(h.GameStates[roomID])
@@ -87,12 +104,13 @@ func (h *GameHub) HandleWS(w http.ResponseWriter, r *http.Request) {
 	for {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
+			log.Printf("Connection dropped for player %s: %v", playerID, err)
 			break
 		}
 
 		var msg ActionMessage
 		if err := json.Unmarshal(message, &msg); err != nil {
-			log.Println("Unmarshal err:", err)
+			log.Printf("Malformed JSON payload incoming: %v", err)
 			continue
 		}
 
