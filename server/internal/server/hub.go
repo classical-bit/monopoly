@@ -49,6 +49,8 @@ func (h *GameHub) HandleWS(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
+	h.Clients[roomID] = append(h.Clients[roomID], conn)
+
 	h.mu.Lock()
 	if h.GameStates[roomID] == nil {
 		specs := map[string]string{playerID: playerName}
