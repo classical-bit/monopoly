@@ -76,6 +76,18 @@ export default function App() {
     }
   };
 
+  const getGridArea = (id: number): string => {
+    if (id === 0) return "3 / 3";
+    if (id === 1) return "3 / 2";
+    if (id === 2) return "3 / 1";
+    if (id === 3) return "2 / 1";
+    if (id === 4) return "1 / 1";
+    if (id === 5) return "1 / 2";
+    if (id === 6) return "1 / 3";
+    if (id === 7) return "2 / 3";
+    return "auto";
+  }
+
   if (!joined) {
     return (
       <div style={{padding: '3rem', textAlign: 'center', fontFamily: 'system-ui, sans-serif', maxWidth: '400px', margin: 'auto'}}>
@@ -98,53 +110,82 @@ export default function App() {
   const isMyTurn = activePlayer?.id === playerId;
 
   return (
-    <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', fontFamily: 'sans-serif', padding: '1rem'}}>
-      <h1>Monopoly Game</h1>
-      <p style={{fontStyle: 'italic', color: '#555'}}>{gameState?.last_message}</p>
+    <div style={{display: 'grid', gridTemplateColumns: '1fr 350px', gap: '2rem', padding: '2rem', fontFamily: 'system-ui, sans-serif', maxWidth: '1200px', margin: '0 auto'}}>
+      {/* Left Column: Board */}
+      <div>
+        <header style={{marginBottom: '1rem'}}>
+          <h1 style={{margin: 0}}>Monopoly Game</h1>
+          <p style={{color: '#666', background: '#f3f4f6', padding: '0.75rem', borderRadius: '6px', borderLeft: '4px solid #3b82f6', marginTop: '1rem'}}>
+            {gameState?.last_message || "Awaiting state sync..."}
+          </p>
+        </header>
 
-      {gameState && (
-        <div>
-          <h3>Dice Output: {gameState.dice1} + {gameState.dice2} = {gameState.dice1 + gameState.dice2}</h3>
+        {gameState && (
+          <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 160px)', gridTemplateRows: 'repeat(3, 160px)', gap: '8px', background: '#dee2e6', padding: '12px', borderRadius: '12px', width: 'fit-content'}}>
+            <div style={{gridArea: '2 / 2 / 3 / 3', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: '#fff', borderRadius: '4px', boxShadow: 'inset 0 0 10px rgba(0,0,0,0.05)'}}>
+              <div style={{fontSize: '1.5rem', fontWeight: 'bold', color: '#1f2937'}}>🎲 {gameState.dice1 + gameState.dice2}</div>
+              <div style={{fontSize: '0.8rem', color: '#6b7280'}}>({gameState.dice1} & {gameState.dice2})</div>
+            </div>
 
-          {/* Simple Linear Representation of Board*/}
-          <div style={{display: 'flex', gap: '10px', margin: '2rem 0', background: '#eee', padding: '1rem', borderRadius: '8px'}}>
             {gameState.board.map((tile) => {
               const playersOnTile = gameState.players.filter(p => p.position === tile.id);
               return (
-                <div key={tile.id} style={{border: '2px solid #333', padding: '0.5rem', width: '100px', minHeight: '120px', background: '#fff'}}>
-                  <strong>{tile.name}</strong>
-                  <div style={{fontSize: '0.8rem', color: '#666'}}>{tile.price > 0 ? `$${tile.price}`: '' }</div>
-                  <div style={{fontSize: '0.75rem', color: 'blue'}}>{tile.owner ? `Owner: ${tile.owner.slice(0,5)}`: '' }</div>
-                  <div style={{marginTop: '10px'}}>
+                <div key={tile.id} style={{gridArea: getGridArea(tile.id), border: '1px solid #9ca3af', padding: '0.5rem', background: '#fff', borderRadius: '6px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative', boxShadow: '0 2px 4px rgba(0,0,0,0.05)'}}>
+                  <div style={{fontSize: '0.85rem', fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{tile.name}</div>
+                  <div>
+                    <div style={{fontSize: '0.8rem', color: '#059669', fontWeight: '600'}}>{tile.price > 0 ? `$${tile.price}`: '' }</div>
+                    {tile.owner && <div style={{fontSize: '0.75rem', color: 'blue'}}>{tile.owner.slice(0,6)}</div>}
+                  </div>
+
+                  <div style={{display: 'flex', gap: '2px', flexWrap: 'wrap', marginTop: '4px'}}>
                     {playersOnTile.map(p => (
-                      <span key={p.id} style={{background: '#f0ad4e', padding: '2px 4px', borderRadius: '4px', display: 'block', fontSize: '0.7rem', marginBottom: '2px'}}>
+                      <span key={p.id} style={{background: '#f59e0b', color: 'white', padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 'bold'}}>
                         {p.name}
                       </span>
                     ))}
                   </div>
-
                 </div>
-              )
+              );
             })}
-          </div>
-          
-          <div style={{background: '#f9f9f9', padding: '1rem', borderRadius: '8px', width: '100%', maxWidth: '500px'}}>
-            <h4>Standings</h4>
-            {gameState.players.map(p => (
-              <div key={p.id} style={{display: 'flex', justifyContent: 'space-between', padding: '0.25rem 0'}}>
-                <span style={{fontWeight: p.id === playerId ? 'bold' : 'normal'}}>{p.name} {p.id === playerId ? '(You)' : ''}</span>
-                <span>${p.balance}</span>
-              </div>
-            ))}
-          </div>
 
-          <div style={{marginTop: '1.5rem', display: 'flex', gap: '10px'}}>
-            <button disabled={!isMyTurn} onClick={() => sendAction('ROLL_DICE')}>Roll Dice</button>
-            <button disabled={!isMyTurn} onClick={() => sendAction('BUY_PROPERTY')}>Buy Property</button>
-            <button disabled={!isMyTurn} onClick={() => sendAction('END_TURN')}>End Turn</button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+
+      {/* Right Column: Status and Actions */}
+      <div style={{display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
+        {gameState && (
+          <>
+            <div style={{background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0'}}>
+              <h3 style={{marginTop: 0, marginBottom: '1rem'}}>Active Standings</h3>
+              {gameState.players.map((p, index) => (
+                <div key={p.id} style={{display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid #e2e8f0', alignItems: 'center'}}>
+                  <span style={{fontWeight: p.id === playerId ? '700' : '400', color: gameState.current_turn === index ? '#ef4444' : 'inherit'}}>
+                    {p.name} {p.id === playerId ? '(You)' : ''} {gameState.current_turn === index ? '⏱️' : ''}
+                  </span>
+                  <span style={{ fontWeight: 'bold', color: '#0f172a'}}>${p.balance}</span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{display: 'flex', flexDirection: 'column', gap: '0.7rem'}}>
+              <button disabled={!isMyTurn} onClick={() => sendAction('ROLL_DICE')} style={{...btnStyle, background: isMyTurn? '#3b82f6' : '#cbd5e1', color: 'white'}}>Roll Dice</button>
+              <button disabled={!isMyTurn} onClick={() => sendAction('BUY_PROPERTY')} style={{...btnStyle, background: isMyTurn? '#3b82f6' : '#cbd5e1', color: 'white'}}>Buy Property</button>
+              <button disabled={!isMyTurn} onClick={() => sendAction('END_TURN')} style={{...btnStyle, background: isMyTurn? '#3b82f6' : '#cbd5e1', color: 'white'}}>End Turn</button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   )
+}
+
+const btnStyle = {
+  padding: '0.85rem 1.5rem',
+  fontSize: '1rem',
+  fontWeight: '600',
+  cursor: 'pointer',
+  border: 'none',
+  borderRadius: '8px',
+  transition: 'all 0.2s ease'
 }
