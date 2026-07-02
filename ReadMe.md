@@ -1,4 +1,4 @@
-# Multiplayer Monopoly Game (MVP)
+# Real-Time Multiplayer Monopoly Game (MVP)
 
 ## System Architecture
 
